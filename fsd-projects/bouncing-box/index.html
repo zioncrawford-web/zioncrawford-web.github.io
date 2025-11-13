@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -73,10 +73,6 @@
         var points = 0;
         var speed = 10;
 
-
-
-
-
         /**
          * This Function will be called 20 times/second.
          * Each time it is called, it should move the Box to a new location.
@@ -85,14 +81,16 @@
         function update() {
           positionX = positionX + speed;
           moveBoxTo(positionX);
-        if (positionX > boardWidth) {
-          speed *= -1;
-        }
-          if (positionX < 0) {
-          speed *= -1;
+
+          if (positionX > boardWidth) {
+            speed *= -1;
           }
-        
-        
+          if (positionX < 0) {
+            speed *= -1;
+          }
+
+
+
         }
 
         /**
@@ -100,16 +98,19 @@
          * Each time it is called, it should perform each of the following actions:
          * - increase the points total
          * - increase the speed
-             * - move the box to the left side of the screen.
+         * - move the box to the left side of the screen.
          */
         function handleBoxClick() {
-        positionX = 0;
-        changeBoxText(points);
-        points++;
-        speed = speed = 3 * points + 10;
+          positionX = 0;
+          changeBoxText(points);
+          points++;
+          speed = 3 * points + 10;
 
 
         }
+
+
+      })();
     </script>
   </body>
 </html>
