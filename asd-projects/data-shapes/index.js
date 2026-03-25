@@ -1,272 +1,357 @@
-$(document).ready(function () {
-/////////////////////////////////////////////////
-// SETUP SECTION - DO NOT TOUCH /////////////////
-/////////////////////////////////////////////////
+/* global $, sessionStorage*/
 
-// These lines register functionality with the different buttons
-$("#cycle-left").on("click", decrementIndex);
-$("#cycle-right").on("click", incrementIndex);
-$("#execute1").on("click", staticDisplay);
-$("#execute2").on("click", goodDisplay);
-$("#execute3").on("click", badDisplay);
+////////////////////////////////////////////////////////////////////////////////
+///////////////////////// VARIABLE DECLARATIONS ////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+console.log("top");
+// HTML jQuery Objects
+var board = $("#board");
+var scoreElement = $("#score");
+var highScoreElement = $("#highScore");
 
-// These lines handle scheduling animations
-const frameRate = 60;
-setInterval(animate, 1000 / frameRate);
+// Game Variables
+var score = 0; // variable to keep track of the score
+var started = false; // variable to keep track of whether the game has started
+// TODO 4, Part 1: Create the apple variable
+var apple = {};
 
-// These lines prepare an object to store animation details
-let animationDetails = {
-x: 148,
-y: 148,
-speedX: 2,
-speedY: 1,
-angle: 0,
-showCount: 60,
-show: true,
-displayType: 0,
+// TODO 5, Part 1: Create the snake variable
+const snake = {};
+var colors = [" pastel pink", "pastel blue", "pastel yellow", "pastel green", " pastel purple"];
+var colorIndex = 0;
+// Constant Variables
+var ROWS = 20;
+var COLUMNS = 20;
+var SQUARE_SIZE = 20;
+var KEY = {
+LEFT: 37,
+UP: 38,
+RIGHT: 39,
+DOWN: 40,
 };
 
-// This line produces most of the data array and stores it in the variable "dataShapes"
-const dataShapes = generateShapeData();
-var currentIndex = 0;
+// interval variable required for stopping the update function when the game ends
+var updateInterval;
 
-/////////////////////////////////////////////////
-// ALL OF YOUR CODE SHOULD GO BELOW HERE ////////
-/////////////////////////////////////////////////
+// variable to keep track of the key (keycode) last pressed by the user
+var activeKey;
 
-// TODO 1: create a new shape object and add it to the array
-var shape = {
-color: "blue",
-shape: "circle",
-repeat: 3
-};
-console.log(shape);
-dataShapes.push(shape);
-// TODO 2: add a new property to all data shapes
-for (var i = 0; i < dataShapes.length; i++) {
-var currentShape = dataShapes[i];
-if (currentShape.color === "red") {
-currentShape.goodBehavior = "bounce";
-} else if (currentShape.color === "blue") {
-currentShape.goodBehavior = "blink";
-} else {
-currentShape.goodBehavior = "spin"; }
-console.log(dataShapes);
-}
-// TODO 3-a: add a function that handles the static display type
-function handleStatic(data) {
-setBackgroundWithObject(data);
-animationDetails.displayType = 1;
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// GAME SETUP //////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// TODO: turn on keyboard inputs
+$("body").on("keydown", handleKeyDown);
+
+// start the game
+init();
+
+function init() {
+// TODO 5, Part 2: initialize the snake
+snake.body = [];
+makeSnakeSquare(10, 10);
+makeSnakeSquare(10, 9);
+makeSnakeSquare(10, 8);
+snake.head = snake.body[0];
+
+// TODO 4, Part 3: initialize the apple
+makeApple();
+
+// TODO 6, Part 1: Initialize the interval
+updateInterval = setInterval(update, 100);
 }
 
-// TODO 4-a: add a function that handles the good display type
-function handleGood(color, shape, repeat) {
-setBackgroundWithSimple(color, shape, repeat);
-animationDetails.displayType = 2;
+////////////////////////////////////////////////////////////////////////////////
+///////////////////////// PROGRAM FUNCTIONS ////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+* On each update tick update the snake's position and check for
+* collisions with the walls.
+*/
+function update() {
+console.log("updated");
+// TODO 6, Part 2: Fill in the update function's code block
+if (started) {
+moveSnake();
 }
 
-// TODO 5-a: add a function that handles the bad display type
-function handleBad(data, repeat) {
-repeat++;
-setBackgroundWithMixed(data, repeat);
-animationDetails.displayType = 3;
+if (hasHitWall() || hasCollidedWithSnake()) {
+endGame();
 }
 
-/////////////////////////////////////////////////
-// BUTTON HANDLERS BELOW HERE (3-b, 4-b, 5-b) ///
-/////////////////////////////////////////////////
-
-function staticDisplay() {
-// TODO 3-b: call your handleStatic function
-handleStatic(dataShapes[currentIndex]);
+if (hasCollidedWithApple()) {
+handleAppleCollision();
+}
 }
 
-function goodDisplay() {
-// TODO 4-b: call your handleGood function
-var currentShape = dataShapes[currentIndex];
-handleGood(currentShape.color, currentShape.shape, currentShape.repeat);
+function checkForNewDirection(event) {
+/*
+TODO 7: Update snake.head.direction based on the value of activeKey.
+BONUS: Only allow direction changes to take place if the new direction is
+perpendicular to the current direction
+*/
+
+if (activeKey === KEY.LEFT) {
+snake.head.direction = "left";
+} else if (activeKey === KEY.RIGHT) {
+snake.head.direction = "right";
+} else if (activeKey === KEY.UP) {
+snake.head.direction = "up";
+} else if (activeKey === KEY.DOWN) {
+snake.head.direction = "down";
+}
+// FILL IN THE REST
+
+console.log(snake.head.direction); // uncomment me!
 }
 
-function badDisplay() {
-// TODO 5-b: call your handleBad function
-var currentShape = dataShapes[currentIndex];
-var repeat = currentShape.repeat;
-handleBad(currentShape, repeat);
+function moveSnake() {
+/*
+TODO 10: Move each part of the snake's body such that it's body follows the head.
+
+/*HINT: To complete this TODO we must figure out the next direction, row, and
+column for each snakeSquare in the snake's body. The parts of the snake are
+stored in the Array snake.body and each part knows its current
+column/row properties.
+*/
+for (var i = snake.body.length - 1; i > 0; i--) {
+var currentSnakeSquare = snake.body[i];
+var snakeSquareInFront = snake.body[i - 1];
+
+moveBodyAToBodyB(currentSnakeSquare, snakeSquareInFront);
+repositionSquare(currentSnakeSquare);
 }
-/////////////////////////////////////////////////
-// ALL OF YOUR CODE SHOULD GO ABOVE HERE ////////
-/////////////////////////////////////////////////
 
-// This function generates objects for 26 of the necessary 27 entries into the dataShapes array that is used for most of this program
-function generateShapeData() {
-const data = [];
-const colors = ["red", "green", "blue"];
-const shapes = ["square", "triangle", "circle"];
-const repeats = [1, 2, 3];
+//Before moving the head, check for a new direction from the keyboard input
+checkForNewDirection();
 
-for (var i = 0; i < colors.length; i++) {
-for (var j = 0; j < shapes.length; j++) {
-for (var k = 0; k < repeats.length; k++) {
-// This condition limits the number of objects created by skipping the combo of "blue circle 3"
+/*
+TODO 8: determine the next row and column for the snake's head
+
+HINT: The snake's head will need to move forward 1 square based on the value
+of snake.head.direction which may be one of "left", "right", "up", or "down"
+*/
+if (snake.head.direction === "left") {
+snake.head.column = snake.head.column - 1;
+}
+else if (snake.head.direction === "right") {
+snake.head.column = snake.head.column + 1;
+} else if (snake.head.direction === "up") {
+snake.head.row = snake.head.row - 1;
+} else if (snake.head.direction === "down") {
+snake.head.row = snake.head.row + 1;
+}
+repositionSquare(snake.head);
+}
+// TODO 9: Create a new helper function
+function moveBodyAToBodyB(bodyA, bodyB) {
+bodyA.row = bodyB.row;
+bodyA.column = bodyB.column;
+bodyA.direction = bodyB.direction;
+console.log("Moving body A to body B...");
+}
+
+function hasHitWall() {
+/*
+TODO 11: Should return true if the snake's head has collided with the four walls of the
+board, false otherwise.
+HINT: What will the row and column of the snake's head be if this were the case?
+*/
 if (
-i !== colors.length - 1 ||
-j !== shapes.length - 1 ||
-k !== repeats.length - 1
+snake.head.row < 0 ||
+snake.head.row > ROWS ||
+snake.head.column < 0 ||
+snake.head.column > COLUMNS
 ) {
-const newObj = {
-color: colors[i],
-shape: shapes[j],
-repeat: repeats[k],
-};
-data.push(newObj);
+// If the head is outside bounds, return true
+return true;
 }
-}
-}
+// Otherwise, return false
+return false;
 }
 
-return data;
-}
 
-// This function decrements the index of the currently selected object in the array (and resets the display type)
-function decrementIndex() {
-currentIndex = currentIndex ? currentIndex - 1 : dataShapes.length - 1;
-resetDisplay();
-}
-
-// This function increments the index of the currently selected object in the array (and resets the display type)
-function incrementIndex() {
-currentIndex =
-currentIndex === dataShapes.length - 1 ? 0 : currentIndex + 1;
-resetDisplay();
-}
-
-// This function resets the display type to the default display (only shows data)
-function resetDisplay() {
-const shapeData = dataShapes[currentIndex];
-
-// Reset all of the CSS and HTML
-$("#shape").css("background", "none");
-$("#shape").css("display", "block");
-$("#shape").css("background-size", "100% 100%");
-$("#shape").css("left", "150px");
-$("#shape").css("top", "150px");
-$("#shape").css("transform", "rotate(0deg)");
-$("#shape").html(
-`<p>${shapeData.color}</p> <p>${shapeData.shape}</p> <p>${shapeData.repeat}x${shapeData.repeat}</p> <p>${shapeData.goodBehavior}</p>`
-);
-
-$("#info-bar").text(`Current index: ${currentIndex}`);
-
-// Reset the JavaScript Data
-animationDetails = {
-x: 148,
-y: 148,
-speedX: 2,
-speedY: 1,
-angle: 0,
-showCount: 60,
-show: true,
-displayType: 0,
-};
-}
-
-// This line sets the initial display
-resetDisplay();
-
-// The below functions set the background for the shape to be displayed
-function setBackgroundWithObject(obj) {
-$("#shape").css("background", `url(images/${obj.color}-${obj.shape}.png)`);
-setBackgroundRepeat(obj.repeat);
-}
-function setBackgroundWithSimple(color, shape, repeat) {
-$("#shape").css("background", `url(images/${color}-${shape}.png)`);
-setBackgroundRepeat(repeat);
-}
-function setBackgroundWithMixed(obj, repeat) {
-$("#shape").css("background", `url(images/${obj.color}-${obj.shape}.png)`);
-setBackgroundRepeat(repeat);
-}
-function setBackgroundRepeat(repeat) {
-$("#shape").css("background-size", `${100 / repeat}% ${100 / repeat}%`);
-}
-
-// This function decides which animation(s) to apply
-function animate() {
-if (animationDetails.displayType !== 0) {
-$("#shape").html("");
-}
-if (animationDetails.displayType < 2) {
-return;
-}
-if (animationDetails.displayType === 2) {
-switch (dataShapes[currentIndex].goodBehavior) {
-case "bounce":
-animateBounce();
-break;
-case "blink":
-animateBlink();
-break;
-case "spin":
-animateSpin();
-break;
-}
-} else {
-switch (dataShapes[currentIndex].goodBehavior) {
-case "bounce":
-animateBlink();
-animateSpin();
-break;
-case "blink":
-animateBounce();
-animateSpin();
-break;
-case "spin":
-animateBounce();
-animateBlink();
-break;
-}
-}
-}
-
-// This function animates bouncing
-function animateBounce() {
-animationDetails.x += animationDetails.speedX;
-animationDetails.y += animationDetails.speedY;
+function hasCollidedWithApple() {
 if (
-animationDetails.x + $("#shape").width() + 8 >=
-$("#shape-container").width() ||
-animationDetails.x < 2
+snake.head.row === apple.row &&
+snake.head.column === apple.column
 ) {
-animationDetails.speedX *= -1;
+return true;
 }
+
+return false;
+}
+/*
+TODO 12: Should return true if the snake's head has collided with the apple,
+false otherwise
+HINT: Both the apple and the snake's head are aware of their own row and column
+*/
+
+function handleAppleCollision() {
+// increase the score and update the score DOM element
+score++;
+scoreElement.text("Score: " + score);
+
+// Remove existing Apple and create a new one
+apple.element.remove();
+makeApple();
+
+var row = snake.tail.row;
+var column = snake.tail.column;
+
+makeSnakeSquare(row, column);
+
+snake.tail.element.css("backgroundColor", colors[colorIndex]);
+
+colorIndex = (colorIndex + 1) % colors.length;
+}
+
+function hasCollidedWithSnake() {
+for (var i = 1; i < snake.body.length; i++) {
 if (
-animationDetails.y + $("#shape").height() + 4 >=
-$("#shape-container").height() ||
-animationDetails.y < 2
+snake.head.row === snake.body[i].row &&
+snake.head.column === snake.body[i].column
 ) {
-animationDetails.speedY *= -1;
-}
-$("#shape").css("left", animationDetails.x);
-$("#shape").css("top", animationDetails.y);
-}
-
-// This function animates blinking
-function animateBlink() {
-animationDetails.showCount--;
-if (animationDetails.showCount === 0) {
-animationDetails.show = !animationDetails.show;
-if (animationDetails.show) {
-$("#shape").css("display", "block");
-} else {
-$("#shape").css("display", "none");
-}
-animationDetails.showCount = 60;
+return true;
 }
 }
 
-// This function animates spinning
-function animateSpin() {
-animationDetails.angle += 4;
-$("#shape").css("transform", `rotate(${animationDetails.angle}deg)`);
+return false;
 }
-});
+
+/*
+TODO 13: Should return true if the snake's head has collided with any part of the
+snake's body.
+HINT: Each part of the snake's body is stored in the snake.body Array. The
+head and each part of the snake's body also knows its own row and column.
+*/
+
+
+function endGame() {
+// stop update function from running
+clearInterval(updateInterval);
+started = false; // reset the started variable
+
+// clear board of all elements
+board.empty();
+
+// update the highScoreElement to display the highScore
+highScoreElement.text("High Score: " + calculateHighScore());
+scoreElement.text("Score: 0");
+score = 0;
+
+// restart the game after 500 ms
+setTimeout(init, 500);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////// HELPER FUNCTIONS ////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+/* Create an HTML element for the apple using jQuery. Then find a random
+* position on the board that is not occupied and position the apple there.
+*/
+function makeApple() {
+// TODO 4, Part 2: Fill in this function's code block
+apple.element = $("<div>").addClass("apple").appendTo(board);
+var randomPosition = getRandomAvailablePosition();
+apple.row = randomPosition.row;
+apple.column = randomPosition.column;
+repositionSquare(apple);
+}
+
+/* Create an HTML element for a snakeSquare using jQuery. Then, given a row and
+* column on the board, position it on the screen. Finally, add the new
+* snakeSquare to the snake.body Array and set a new tail.
+*/
+function makeSnakeSquare(row, column) {
+// TODO 5, Part 2: Fill in this function's code block
+const snakeSquare = {};
+snakeSquare.element = $("<div>").addClass("snake").appendTo(board);
+snakeSquare.row = row;
+snakeSquare.column = column;
+repositionSquare(snakeSquare);
+if (snake.body.length === 0) {
+snakeSquare.element.attr("id", "snake-head");
+}
+snake.body.push(snakeSquare);
+snake.tail = snakeSquare;
+}
+
+/*
+event.which returns the keycode of the key that is pressed when the
+keydown event occurs
+The KEY Object creates a map for the Arrow Keys to their keycode:
+
+KEY.LEFT = 37
+KEY.UP = 38
+KEY.RIGHT = 39
+KEY.DOWN = 40
+*/
+function handleKeyDown(event) {
+// TODO 7: make the handleKeyDown function register which key is pressed
+activeKey = event.which;
+console.log(activeKey);
+
+// If a valid direction key is pressed, start the game
+if (
+event.which === KEY.LEFT ||
+event.which === KEY.RIGHT ||
+event.which === KEY.UP ||
+event.which === KEY.DOWN
+) {
+console.log("game started");
+started = true; // the game starts when the first key is pressed
+}
+}
+
+/* Given a gameSquare (which may be a snakeSquare or the apple), position
+* the gameSquare on the screen.
+*/
+function repositionSquare(square) {
+var squareElement = square.element;
+var row = square.row;
+var column = square.column;
+
+var buffer = 20;
+
+// position the square on the screen according to the row and column
+squareElement.css("left", column * SQUARE_SIZE + buffer);
+squareElement.css("top", row * SQUARE_SIZE + buffer);
+}
+
+/* Returns a (row,column) Object that is not occupied by another game component
+*/
+function getRandomAvailablePosition() {
+var spaceIsAvailable;
+var randomPosition = {};
+
+/* Generate random positions until one is found that doesn't overlap with the snake */
+while (!spaceIsAvailable) {
+randomPosition.column = Math.floor(Math.random() * COLUMNS);
+randomPosition.row = Math.floor(Math.random() * ROWS);
+spaceIsAvailable = true;
+
+/*
+TODO 14: After generating the random position determine if that position is
+not occupied by a snakeSquare in the snake's body. If it is then set
+spaceIsAvailable to false so that a new position is generated.
+*/
+}
+
+return randomPosition;
+}
+
+function calculateHighScore() {
+// retrieve the high `score from session storage if it exists, or set it to 0
+var highScore = sessionStorage.getItem("highScore") || 0;
+
+if (score > highScore) {
+sessionStorage.setItem("highScore", score);
+highScore = score;
+alert("New High Score!");
+}
+
+return highScore;
+}
